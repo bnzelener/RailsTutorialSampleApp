@@ -21,6 +21,20 @@ describe "User Pages" do
       end
     end
 
+    describe "pagination" do
+
+      before(:all) { 30.times { FactoryGirl.create(:user)} }
+      after(:all)  { User.delete_all }
+
+      it { should have_selector('div.pagination') }
+
+      it "should list each user" do
+        User.paginate(page: 1).each do |u|
+          expect(page).to have_selector('li', text: u.name)
+        end
+      end
+    end
+    
     describe "delete links" do
       it { should_not have_link('delete') }
 
@@ -134,6 +148,20 @@ describe "User Pages" do
         it { should have_link('Sign out', href: signout_path) }
         specify { expect(user.reload.name).to eq new_name }
         specify { expect(user.reload.email).to eq new_email }
+      end
+
+      describe "forbidden attributes" do
+        let(:params) do
+          { user: { admin: true, password: user.password, 
+                    password_confirmation: user.password } }
+        end
+
+        before do
+          sign_in user, no_capybara: true
+          patch user_path(user), params
+        end
+
+        specify { expect(user.reload).not_to be_admin }
       end
     end
   end
